@@ -3,8 +3,8 @@ name: Run Api.Write
 
 on: 
   workflow_dispatch:
-release:
-    types: [published]
+#release:
+#    types: [published]
   #push:
   #  tags:
   #  - 'v*'
@@ -12,8 +12,8 @@ release:
   #    - master
   #schedule:
   #  - cron: '12 1 * * *'
-  watch:
-    types: [started]
+  #watch:
+  #  types: [started]
 
 jobs:
   build:
