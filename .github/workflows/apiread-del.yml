@@ -1,3 +1,4 @@
+name: Del WFs Api.Read
 on:
   workflow_dispatch:
   
