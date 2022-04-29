@@ -1,3 +1,4 @@
+name: Del WFs UpdateToken
 on:
   workflow_dispatch:
   
