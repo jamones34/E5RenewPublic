@@ -9,13 +9,13 @@ import json,sys,time,random
 emailaddress=os.getenv('EMAIL')
 app_num=os.getenv('APP_NUM')
 ###########################
-# config选项说明
-# 0：关闭  ， 1：开启
-# allstart：是否全api开启调用，关闭默认随机抽取调用。默认0关闭
-# rounds: 轮数，即每次启动跑几轮。
-# rounds_delay: 是否开启每轮之间的随机延时，后面两参数代表延时的区间。默认0关闭
-# api_delay: 是否开启api之间的延时，默认0关闭
-# app_delay: 是否开启账号之间的延时，默认0关闭
+# config option description
+# 0：off  ， 1：on
+# allstart：Whether to open the call for all APIs, and close the default random extraction call. Default 0 off
+# rounds: The number of rounds, that is, how many rounds are run at each start.
+# rounds_delay: Whether to enable random delay between rounds, the last two parameters represent the delay interval. Default 0 off
+# api_delay: Whether to enable the delay between APIs, the default is 0 to disable
+# app_delay: Whether to open the delay between accounts, the default is 0 to close
 ########################################
 config = {
          'allstart': 0,
@@ -31,7 +31,7 @@ if city == '':
     city = 'Beijing'
 access_token_list=['wangziyingwen']*int(app_num)
 
-#微软refresh_token获取
+#Microsoft refresh_token acquisition
 def getmstoken(ms_token,appnum):
     headers={'Content-Type':'application/x-www-form-urlencoded'
             }
@@ -44,14 +44,14 @@ def getmstoken(ms_token,appnum):
     html = req.post('https://login.microsoftonline.com/common/oauth2/v2.0/token',data=data,headers=headers)
     jsontxt = json.loads(html.text)
     if 'refresh_token' in jsontxt:
-        print(r'账号/应用 '+str(appnum)+' 的微软密钥获取成功')
+        print(r'Account/App '+str(appnum)+' Microsoft key obtained successfully')
     else:
-        print(r'账号/应用 '+str(appnum)+' 的微软密钥获取失败\n'+'请检查secret里 CLIENT_ID , CLIENT_SECRET , MS_TOKEN 格式与内容是否正确，然后重新设置')
+        print(r'Account/App '+str(appnum)+' The Microsoft key acquisition failed\n'+'Please check whether the format and content of CLIENT_ID , CLIENT_SECRET , MS_TOKEN in secret are correct, and then reset')
     refresh_token = jsontxt['refresh_token']
     access_token = jsontxt['access_token']
     return access_token
 
-#api延时
+#api delay
 def apiDelay():
     if config['api_delay'][0] == 1:
         time.sleep(random.randint(config['api_delay'][1],config['api_delay'][2]))
@@ -72,22 +72,22 @@ def apiReq(method,a,url,data='QAQ'):
     else :
         posttext=req.get(url,headers=headers)
     if posttext.status_code < 300:
-        print('        操作成功')
+        print('        Successful operation')
     else:
-        print('        操作失败')
+        print('        operation failed')
 #    if posttext.status_code > 300:
-#        print('        操作失败')
-#        #成功不提示
+#        print('        operation failed')
+#        #No prompt for success
     return posttext.text
           
 
-#上传文件到onedrive(小于4M)
+#Upload files to onedrive (less than 4M)
 def UploadFile(a,filesname,f):
     url=r'https://graph.microsoft.com/v1.0/me/drive/root:/AutoApi/App'+str(a)+r'/'+filesname+r':/content'
     apiReq('put',a,url,f)
     
         
-# 发送邮件到自定义邮箱
+# Send mail to custom mailbox
 def SendEmail(a,subject,content):
     url=r'https://graph.microsoft.com/v1.0/me/sendMail'
     mailmessage={'message': {'subject': subject,
@@ -97,23 +97,23 @@ def SendEmail(a,subject,content):
                  'saveToSentItems': 'true'}            
     apiReq('post',a,url,json.dumps(mailmessage))	
 	
-#修改excel(这函数分离好像意义不大)
-#api-获取itemid: https://graph.microsoft.com/v1.0/me/drive/root/search(q='.xlsx')?select=name,id,webUrl
+#Modify excel (this function separation does not seem to make much sense)
+#api-get itemid: https://graph.microsoft.com/v1.0/me/drive/root/search(q='.xlsx')?select=name,id,webUrl
 def excelWrite(a,filesname,sheet):
-    print('    添加工作表')
+    print('    add worksheet')
     url=r'https://graph.microsoft.com/v1.0/me/drive/root:/AutoApi/App'+str(a)+r'/'+filesname+r':/workbook/worksheets/add'
     data={
          "name": sheet
          }
     apiReq('post',a,url,json.dumps(data))
-    print('    添加表格')
+    print('    Add form')
     url=r'https://graph.microsoft.com/v1.0/me/drive/root:/AutoApi/App'+str(a)+r'/'+filesname+r':/workbook/worksheets/'+sheet+r'/tables/add'
     data={
          "address": "A1:D8",
          "hasHeaders": False
          }
     jsontxt=json.loads(apiReq('post',a,url,json.dumps(data)))
-    print('    添加行')
+    print('    add line')
     url=r'https://graph.microsoft.com/v1.0/me/drive/root:/AutoApi/App'+str(a)+r'/'+filesname+r':/workbook/tables/'+jsontxt['id']+r'/rows/add'
     rowsvalues=[[0]*4]*2
     for v1 in range(0,2):
@@ -125,28 +125,28 @@ def excelWrite(a,filesname,sheet):
     apiReq('post',a,url,json.dumps(data))
     
 def taskWrite(a,taskname):
-    print("    创建任务列表")
+    print("    Create a task list")
     url=r'https://graph.microsoft.com/v1.0/me/todo/lists'
     data={
          "displayName": taskname
          }
     listjson=json.loads(apiReq('post',a,url,json.dumps(data)))
-    print("    创建任务")
+    print("    Create a task")
     url=r'https://graph.microsoft.com/v1.0/me/todo/lists/'+listjson['id']+r'/tasks'
     data={
          "title": taskname,
          }
     taskjson=json.loads(apiReq('post',a,url,json.dumps(data)))
-    print("    删除任务")
+    print("    delete task")
     url=r'https://graph.microsoft.com/v1.0/me/todo/lists/'+listjson['id']+r'/tasks/'+taskjson['id']
     apiReq('delete',a,url)
-    print("    删除任务列表")
+    print("    delete task list")
     url=r'https://graph.microsoft.com/v1.0/me/todo/lists/'+listjson['id']
     apiReq('delete',a,url)    
     
 def teamWrite(a,channelname):
-    #新建team
-    print('    新建team')
+    #newteam
+    print('    newteam')
     url=r'https://graph.microsoft.com/v1.0/teams'
     data={
          "template@odata.bind": "https://graph.microsoft.com/v1.0/teamsTemplates('standard')",
@@ -154,13 +154,13 @@ def teamWrite(a,channelname):
          "description": "My Sample Team’s Description"
          }
     apiReq('post',a,url,json.dumps(data))
-    print("    获取team信息")
+    print("    Get team information")
     url=r'https://graph.microsoft.com/v1.0/me/joinedTeams'
     teamlist = json.loads(apiReq('get',a,url))
     for teamcount in range(teamlist['@odata.count']):
         if teamlist['value'][teamcount]['displayName'] == channelname:
-            #创建频道
-            print("    创建team频道")
+            #Create a channel
+            print("    Create a team channel")
             data={
                  "displayName": channelname,
                  "description": "This channel is where we debate all future architecture plans",
@@ -169,60 +169,60 @@ def teamWrite(a,channelname):
             url=r'https://graph.microsoft.com/v1.0/teams/'+teamlist['value'][teamcount]['id']+r'/channels'
             jsontxt = json.loads(apiReq('post',a,url,json.dumps(data)))
             url=r'https://graph.microsoft.com/v1.0/teams/'+teamlist['value'][teamcount]['id']+r'/channels/'+jsontxt['id']
-            print("    删除team频道")
+            print("    delete team channel")
             apiReq('delete',a,url)
-            #删除teams
-            print("    删除team")
+            #delete teams
+            print("    delete team")
             url=r'https://graph.microsoft.com/v1.0/groups/'+teamlist['value'][teamcount]['id']
             apiReq('delete',a,url)  
             
 def onenoteWrite(a,notename):
-    print('    创建笔记本')
+    print('    Create a notebook')
     url=r'https://graph.microsoft.com/v1.0/me/onenote/notebooks'
     data={
          "displayName": notename,
          }
     notetxt = json.loads(apiReq('post',a,url,json.dumps(data)))
-    print('    创建笔记本分区')
+    print('    Create notebook sections')
     url=r'https://graph.microsoft.com/v1.0/me/onenote/notebooks/'+notetxt['id']+r'/sections'
     data={
          "displayName": notename,
          }
     apiReq('post',a,url,json.dumps(data))
-    print('    删除笔记本')
+    print('    delete notebook')
     url=r'https://graph.microsoft.com/v1.0/me/drive/root:/Notebooks/'+notename
     apiReq('delete',a,url)
     
-#一次性获取access_token，降低获取率
+#Obtain access_token at one time to reduce the acquisition rate
 for a in range(1, int(app_num)+1):
     client_id=os.getenv('CLIENT_ID_'+str(a))
     client_secret=os.getenv('CLIENT_SECRET_'+str(a))
     ms_token=os.getenv('MS_TOKEN_'+str(a))
     access_token_list[a-1]=getmstoken(ms_token,a)
 print('')    
-#获取天气
+#get weather
 headers={'Accept-Language': 'zh-CN'}
 weather=req.get(r'http://wttr.in/'+city+r'?format=4&?m',headers=headers).text
 
-#实际运行
+#Actual operation
 for a in range(1, int(app_num)+1):
-    print('账号 '+str(a))
-    print('发送邮件 ( 邮箱单独运行，每次运行只发送一次，防止封号 )')
+    print('account '+str(a))
+    print('Send mail (mailbox runs alone, only send once per run, to prevent bans)')
     if emailaddress != '':
         SendEmail(a,'weather',weather)
 print('')
-#其他api
+#other APIs
 for _ in range(1,config['rounds']+1):
     if config['rounds_delay'][0] == 1:
         time.sleep(random.randint(config['rounds_delay'][1],config['rounds_delay'][2]))     
-    print('第 '+str(_)+' 轮\n')        
+    print('Round '+str(_)+' \n')        
     for a in range(1, int(app_num)+1):
         if config['app_delay'][0] == 1:
             time.sleep(random.randint(config['app_delay'][1],config['app_delay'][2]))        
-        print('账号 '+str(a))    
-        #生成随机名称
+        print('account '+str(a))    
+        #Generate random names
         filesname='QAQ'+str(random.randint(1,600))+r'.xlsx'
-        #新建随机xlsx文件
+        #Create a new random xlsx file
         xls = xlsxwriter.Workbook(filesname)
         xlssheet = xls.add_worksheet()
         for s1 in range(0,4):
@@ -230,20 +230,20 @@ for _ in range(1,config['rounds']+1):
                 xlssheet.write(s1,s2,str(random.randint(1,600)))
         xls.close()
         xlspath=sys.path[0]+r'/'+filesname
-        print('上传文件 ( 可能会偶尔出现创建上传失败的情况 ) ')
+        print('Upload files (may occasionally fail to create uploads)')
         with open(xlspath,'rb') as f:
             UploadFile(a,filesname,f)
         choosenum = random.sample(range(1, 5),2)
         if config['allstart'] == 1 or 1 in choosenum:
-            print('excel文件操作')
+            print('Excel file operations')
             excelWrite(a,filesname,'QVQ'+str(random.randint(1,600)))
         if config['allstart'] == 1 or 2 in choosenum:
-            print('team操作')
+            print('team operation')
             teamWrite(a,'QVQ'+str(random.randint(1,600)))
         if config['allstart'] == 1 or 3 in choosenum:
-            print('task操作')
+            print('task operation')
             taskWrite(a,'QVQ'+str(random.randint(1,600)))
         if config['allstart'] == 1 or 4 in choosenum:
-            print('onenote操作')
+            print('onenote operation')
             onenoteWrite(a,'QVQ'+str(random.randint(1,600)))
         print('-')
